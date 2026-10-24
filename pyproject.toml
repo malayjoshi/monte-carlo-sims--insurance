@@ -9,6 +9,9 @@ description = "Chunked NumPy baseline for Monte Carlo insurance projections"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24,<3"]
 
+[project.optional-dependencies]
+gpu-cuda12 = ["cupy-cuda12x>=14,<15"]
+
 [tool.setuptools.packages.find]
 include = ["src*"]
 
