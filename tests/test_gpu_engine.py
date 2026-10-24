@@ -3,16 +3,16 @@ import importlib.util
 import numpy as np
 import pytest
 
-from src.cpu_engine import _uniform, project_cpu
-from src.gpu_engine import (
+from monte_carlo_accelerator.cpu_engine import _uniform, project_cpu
+from monte_carlo_accelerator.gpu_engine import (
     GPUUnavailableError,
     GpuPolicies,
     _project_gpu_backend,
     _uniform_backend,
     project_gpu,
 )
-from src.models import ProjectionConfig
-from src.policy_generator import generate_policies
+from monte_carlo_accelerator.models import ProjectionConfig
+from monte_carlo_accelerator.policy_generator import generate_policies
 
 
 RNG_VECTORS = (

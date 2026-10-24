@@ -1,4 +1,4 @@
-from src.environment import collect_environment
+from monte_carlo_accelerator.environment import collect_environment
 
 
 def test_environment_contains_reproducibility_fields():

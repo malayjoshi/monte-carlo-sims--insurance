@@ -9,10 +9,10 @@ Part 2 ports the validated NumPy projection to CuPy while preserving the indexed
 - CuPy is imported lazily, so CPU-only development and tests do not require CUDA.
 - Frozen RNG vectors cover scalar, boundary, and large identifier inputs.
 - The GPU algorithm is exercised with a NumPy backend locally; real CUDA validation must run on the AWS host.
-- `src.engine.project` provides explicit `cpu`/`gpu` selection and automatic dispatch. The automatic default attempts GPU execution at 10 million policy-scenario combinations and otherwise stays on CPU. If CUDA is unavailable it falls back to CPU; execution failures after a GPU is selected are not hidden.
+- `monte_carlo_accelerator.engine.project` provides explicit `cpu`/`gpu` selection and automatic dispatch. The automatic default attempts GPU execution at 10 million policy-scenario combinations and otherwise stays on CPU. If CUDA is unavailable it falls back to CPU; execution failures after a GPU is selected are not hidden.
 
 ```python
-from src import project
+from monte_carlo_accelerator import project
 
 result = project(policies, scenarios)  # backend="auto"
 ```
@@ -25,7 +25,7 @@ Long-running services can initialize CUDA once and reuse the same context and
 compiled kernels:
 
 ```python
-from src import WarmGPUWorker, project
+from monte_carlo_accelerator import WarmGPUWorker, project
 
 gpu = WarmGPUWorker()
 
@@ -81,7 +81,7 @@ CuPy publishes distinct wheels for CUDA 12 and CUDA 13. Install exactly one CuPy
 python -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip setuptools
-python -m pip install -e '.[gpu-cuda12]'
+python -m pip install -e '.[dev,gpu-cuda12]'
 python -c 'import cupy; cupy.show_config()'
 nvidia-smi
 python -m pytest

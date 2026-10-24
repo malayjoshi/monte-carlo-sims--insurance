@@ -1,9 +1,9 @@
 import pytest
 
-import src.engine as engine
-from src.gpu_engine import GPUUnavailableError
-from src.models import ProjectionResult
-from src.policy_generator import generate_policies
+import monte_carlo_accelerator.engine as engine
+from monte_carlo_accelerator.gpu_engine import GPUUnavailableError
+from monte_carlo_accelerator.models import ProjectionResult
+from monte_carlo_accelerator.policy_generator import generate_policies
 
 
 def _result(tag):

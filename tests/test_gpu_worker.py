@@ -1,9 +1,9 @@
 import numpy as np
 
-import src.gpu_worker as gpu_worker
-from src.gpu_engine import GpuPolicies
-from src.models import ProjectionResult
-from src.policy_generator import generate_policies
+import monte_carlo_accelerator.gpu_worker as gpu_worker
+from monte_carlo_accelerator.gpu_engine import GpuPolicies
+from monte_carlo_accelerator.models import ProjectionResult
+from monte_carlo_accelerator.policy_generator import generate_policies
 
 
 def test_worker_loads_backend_once_and_warms_once(monkeypatch):

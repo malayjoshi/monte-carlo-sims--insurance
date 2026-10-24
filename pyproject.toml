@@ -10,11 +10,16 @@ requires-python = ">=3.10"
 dependencies = ["numpy>=1.24,<3"]
 
 [project.optional-dependencies]
+dev = ["pytest>=7,<9"]
 gpu-cuda12 = ["cupy-cuda12x>=14,<15"]
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
 [tool.setuptools.packages.find]
-include = ["src*"]
+where = ["src"]
+include = ["monte_carlo_accelerator*"]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
