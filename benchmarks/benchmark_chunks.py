@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 import argparse
 import csv
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from src.cpu_engine import project_cpu
-from src.metrics import measure, summarize
-from src.models import ProjectionConfig
-from src.policy_generator import generate_policies
+from monte_carlo_accelerator.cpu_engine import project_cpu
+from monte_carlo_accelerator.metrics import measure, summarize
+from monte_carlo_accelerator.models import ProjectionConfig
+from monte_carlo_accelerator.policy_generator import generate_policies
 
 DEFAULT_CHUNKS = "512x128,1024x128,1024x256,2048x128,2048x256,2048x512,4096x128,4096x256"
 

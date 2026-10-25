@@ -8,6 +8,7 @@ This is an educational performance-engineering project. The model and data are s
 
 ```fish
 source venv/bin/activate.fish
+python -m pip install -e '.[dev]'
 python -m pytest
 python benchmarks/benchmark_cpu.py --preset small
 ```
@@ -113,3 +114,24 @@ The local chunk sweep observed a maximum absolute difference of `1.19209289551e-
 - The validated repeated result covers the medium workload; earlier large and stress results were single runs.
 - The combinations/s metric counts policy-scenario pairs, each projected across 30 annual steps.
 - No NVIDIA GPU or AWS resources are used in this phase.
+
+## Part 2: optional NVIDIA GPU engine
+
+Part 2 development lives in `src/monte_carlo_accelerator/gpu_engine.py` and keeps CuPy optional so the CPU environment remains usable. See [`docs/PART2_GPU.md`](docs/PART2_GPU.md) for CUDA installation, parity checks, and benchmark methodology.
+
+Use `monte_carlo_accelerator.project(...)` for safe automatic dispatch. It keeps workloads below 10 million policy-scenario combinations on CPU, attempts GPU at or above that configurable threshold, and falls back to CPU when CuPy/CUDA is unavailable. The threshold comes from one completed `g4dn.xlarge`/Tesla T4 benchmark and should be recalibrated for other production hardware and workload patterns.
+
+For a service that handles repeated GPU jobs, create one warm worker when the
+process starts and pass it to each projection:
+
+```python
+from monte_carlo_accelerator import WarmGPUWorker, project
+
+gpu = WarmGPUWorker()  # initializes CUDA and runs one tiny warm-up projection
+result = project(policies, scenarios, gpu_worker=gpu)
+```
+
+The worker keeps the CUDA context and compiled CuPy kernels alive and serializes
+access to its GPU. Create it only in processes intended to use CUDA; constructing
+it eagerly initializes the GPU even if a later automatic-dispatch call is below
+the threshold.

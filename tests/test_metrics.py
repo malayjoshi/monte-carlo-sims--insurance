@@ -1,6 +1,6 @@
 import pytest
 
-from src.metrics import Measurement, measure, summarize
+from monte_carlo_accelerator.metrics import Measurement, measure, summarize
 
 
 def test_measure_returns_value_runtime_and_memory():

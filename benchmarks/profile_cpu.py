@@ -3,14 +3,11 @@ import argparse
 import cProfile
 import io
 import pstats
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from src.cpu_engine import project_cpu
-from src.models import ProjectionConfig
-from src.policy_generator import generate_policies
+from monte_carlo_accelerator.cpu_engine import project_cpu
+from monte_carlo_accelerator.models import ProjectionConfig
+from monte_carlo_accelerator.policy_generator import generate_policies
 
 
 def main() -> None:

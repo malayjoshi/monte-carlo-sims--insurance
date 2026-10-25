@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from src.cpu_engine import project_cpu, project_reference
-from src.models import ProjectionConfig
-from src.policy_generator import generate_policies
+from monte_carlo_accelerator.cpu_engine import project_cpu, project_reference
+from monte_carlo_accelerator.models import ProjectionConfig
+from monte_carlo_accelerator.policy_generator import generate_policies
 
 
 def test_vectorized_matches_reference():
