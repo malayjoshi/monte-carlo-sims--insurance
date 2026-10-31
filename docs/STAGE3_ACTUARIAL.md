@@ -141,3 +141,27 @@ summary CSV, run-level CSV, and detailed JSON outputs under `results/`.
 Throughput counts policy-scenario combinations, matching the earlier benchmark
 convention. `policy_scenario_years` is also recorded in JSON because the Stage 3
 engine performs multiple cash-flow and decrement operations per projected year.
+
+## GPU benchmark
+
+On an NVIDIA CUDA host with the optional CuPy dependency installed, start with
+the small workload:
+
+```bash
+python benchmarks/benchmark_stage3_gpu.py --preset small
+```
+
+Then run medium before deciding whether available memory and elapsed time permit
+large and stress workloads. The runner records CUDA startup, policy preparation,
+cold prepared compute, repeated warm prepared compute, warm end-to-end execution,
+CuPy memory-pool snapshots, device metadata, and environment metadata.
+
+Every GPU benchmark also runs an untimed CPU reference using identical inputs,
+assumptions, seed, and chunk sizes. Premium, claim, expense, and derived net cash
+flows must each satisfy `rtol=1e-12, atol=1e-6`; the benchmark fails instead of
+writing a successful result when any component exceeds that tolerance.
+
+CPU performance remains the responsibility of `benchmark_stage3_cpu.py`. This
+prevents a single untuned CPU correctness run inside the GPU runner from being
+reported as a robust speedup baseline. Compare repeated CPU and GPU medians only
+when they use matching hardware, workload, assumptions, and declared methodology.
