@@ -4,6 +4,13 @@ A deterministic, chunked NumPy baseline for a 30-year synthetic life-insurance M
 
 This is an educational performance-engineering project. The model and data are synthetic and are not an actuarial pricing basis.
 
+Stage 3 adds a separate, CPU-based term-life workflow with validated CSV
+portfolio input, configurable mortality/lapse/expense assumptions, and
+scenario-level premium, claim, expense, and net cash-flow present values. See
+[`docs/STAGE3_ACTUARIAL.md`](docs/STAGE3_ACTUARIAL.md). The original claim-only
+CPU/GPU path remains unchanged so the published performance results stay
+reproducible.
+
 ## Quick start
 
 ```fish
