@@ -79,3 +79,33 @@ This first Stage 3 slice is CPU-only. The established claim-only Stage 2 engine
 still supports automatic CPU/GPU dispatch. GPU acceleration for the richer
 multi-cash-flow model should follow only after the actuarial definitions and
 acceptance examples are agreed and frozen.
+
+## CPU benchmark
+
+Run a repeatable Stage 3 CPU benchmark with a generated portfolio:
+
+```bash
+python benchmarks/benchmark_stage3_cpu.py --preset small
+```
+
+The presets are `small` (100,000 combinations), `medium` (10 million), `large`
+(100 million), and `stress` (500 million). Custom policy and scenario counts can
+be supplied with `--policies` and `--scenarios`.
+
+To benchmark projection using a portfolio loaded from CSV:
+
+```bash
+python benchmarks/benchmark_stage3_cpu.py \
+  --portfolio-csv results/stage3_portfolio_100k.csv \
+  --scenarios 100
+```
+
+Portfolio generation or CSV loading is measured and reported separately. It is
+excluded from projection throughput. The benchmark records the first projection
+as cold, performs configurable warmups, measures repeated warm projections,
+checks exact repeatability across premium, claim, and expense arrays, and writes
+summary CSV, run-level CSV, and detailed JSON outputs under `results/`.
+
+Throughput counts policy-scenario combinations, matching the earlier benchmark
+convention. `policy_scenario_years` is also recorded in JSON because the Stage 3
+engine performs multiple cash-flow and decrement operations per projected year.
