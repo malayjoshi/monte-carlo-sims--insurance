@@ -73,16 +73,10 @@ Mortality currently uses the repository's illustrative smooth mortality curve
 with a configurable scale. It is not a published mortality table and the output
 is not suitable for pricing, reserving, or financial reporting.
 
-## Scope boundary
+## CPU/GPU execution
 
-This first Stage 3 slice is CPU-only. The established claim-only Stage 2 engine
-still supports automatic CPU/GPU dispatch. GPU acceleration for the richer
-multi-cash-flow model should follow only after the actuarial definitions and
-acceptance examples are agreed and frozen.
-
-### Optional GPU engine
-
-The reviewed Stage 3 timing convention is also implemented with optional CuPy:
+The original `project_term_life` API remains the explicit CPU path. The reviewed
+timing convention is also implemented with optional CuPy:
 
 ```python
 from monte_carlo_accelerator import project_term_life_gpu
@@ -107,10 +101,32 @@ tests run the GPU algorithm through its NumPy-compatible backend and require
 component-level parity for premium, claim, and expense present values. Real CUDA
 correctness, memory use, and performance must be verified on NVIDIA hardware.
 
-Stage 3 automatic dispatch is intentionally deferred until CPU/GPU benchmarks
-establish a crossover threshold for the richer model. The Stage 2 threshold must
-not be assumed to apply because Stage 3 performs additional cash-flow and lapse
-calculations.
+For automatic backend selection, use `project_term_life_auto`:
+
+```python
+from monte_carlo_accelerator import project_term_life_auto
+
+result = project_term_life_auto(portfolio, scenarios=10_000, assumptions=assumptions)
+```
+
+The default threshold is 10 million policy-scenario combinations. Smaller work
+uses CPU without probing or initializing CUDA. At or above the threshold, the
+dispatcher tries GPU and falls back to CPU only when CuPy or CUDA is unavailable.
+Other GPU errors remain visible. Both the threshold and backend can be set per
+call with `gpu_threshold=...` and `backend="auto"`, `"cpu"`, or `"gpu"`.
+
+The default is a conservative operating point based on matched CPU/GPU runs on
+an AWS `g4dn.xlarge` with an NVIDIA Tesla T4:
+
+| Workload | CPU | Warm GPU | Speedup |
+| ---: | ---: | ---: | ---: |
+| 100,000 | 0.169 s | 0.048 s | 3.55x |
+| 10 million | 15.322 s | 1.208 s | 12.68x |
+| 100 million | 140.877 s | 10.354 s | 13.61x |
+| 500 million | 688.394 s | 51.490 s | 13.37x |
+
+This is a hardware-specific benchmark policy, not a universal crossover. Adjust
+it after measuring the target CPU, GPU, CUDA startup model, and workload mix.
 
 ## CPU benchmark
 
