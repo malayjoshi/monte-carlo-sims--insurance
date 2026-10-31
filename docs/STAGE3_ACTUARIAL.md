@@ -80,6 +80,38 @@ still supports automatic CPU/GPU dispatch. GPU acceleration for the richer
 multi-cash-flow model should follow only after the actuarial definitions and
 acceptance examples are agreed and frozen.
 
+### Optional GPU engine
+
+The reviewed Stage 3 timing convention is also implemented with optional CuPy:
+
+```python
+from monte_carlo_accelerator import project_term_life_gpu
+
+result = project_term_life_gpu(portfolio, scenarios=10_000, assumptions=assumptions)
+```
+
+For repeated runs, transfer a portfolio once and reuse it:
+
+```python
+from monte_carlo_accelerator import (
+    prepare_gpu_term_life_policies,
+    project_term_life_gpu_prepared,
+)
+
+gpu_portfolio = prepare_gpu_term_life_policies(portfolio)
+result = project_term_life_gpu_prepared(gpu_portfolio, 10_000, assumptions)
+```
+
+CuPy remains optional and the CPU environment does not initialize CUDA. Local
+tests run the GPU algorithm through its NumPy-compatible backend and require
+component-level parity for premium, claim, and expense present values. Real CUDA
+correctness, memory use, and performance must be verified on NVIDIA hardware.
+
+Stage 3 automatic dispatch is intentionally deferred until CPU/GPU benchmarks
+establish a crossover threshold for the richer model. The Stage 2 threshold must
+not be assumed to apply because Stage 3 performs additional cash-flow and lapse
+calculations.
+
 ## CPU benchmark
 
 Run a repeatable Stage 3 CPU benchmark with a generated portfolio:
