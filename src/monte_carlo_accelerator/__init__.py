@@ -1,6 +1,10 @@
 """Monte Carlo accelerator."""
 
 from .actuarial_engine import project_term_life
+from .actuarial_dispatch import (
+    DEFAULT_STAGE3_GPU_THRESHOLD,
+    project_term_life_auto,
+)
 from .actuarial_gpu_engine import (
     GpuTermLifePolicies,
     prepare_gpu_term_life_policies,
@@ -17,6 +21,7 @@ __all__ = [
     "ActuarialAssumptions",
     "ActuarialProjectionResult",
     "DEFAULT_GPU_THRESHOLD",
+    "DEFAULT_STAGE3_GPU_THRESHOLD",
     "GpuTermLifePolicies",
     "TermLifePolicies",
     "WarmGPUWorker",
@@ -24,6 +29,7 @@ __all__ = [
     "load_term_life_portfolio",
     "project",
     "project_term_life",
+    "project_term_life_auto",
     "prepare_gpu_term_life_policies",
     "project_term_life_gpu",
     "project_term_life_gpu_prepared",
