@@ -16,6 +16,31 @@ policy_id,age_at_entry,sum_assured,annual_premium,term_years
 Policy identifiers must be unique. Ages must be between 0 and 120; monetary
 amounts must be non-negative; terms must be positive.
 
+### Synthetic portfolios
+
+For correctness and performance testing, generate deterministic portfolios in
+memory without storing large datasets in Git:
+
+```python
+from monte_carlo_accelerator import generate_term_life_portfolio
+
+portfolio = generate_term_life_portfolio(100_000, seed=17)
+```
+
+To exercise the CSV ingestion path, create a file on demand:
+
+```bash
+python benchmarks/generate_stage3_portfolio.py \
+  --count 100000 \
+  --seed 17 \
+  --output results/stage3_portfolio_100k.csv
+```
+
+The synthetic generator produces entry ages from 20 to 65, terms of 5 to 30
+years ending no later than age 80, skewed sum-assured values between 25,000 and
+2,000,000, and positive age-sensitive premiums. These distributions are
+illustrative and are not calibrated to observed business or a pricing basis.
+
 ## Projection
 
 ```python

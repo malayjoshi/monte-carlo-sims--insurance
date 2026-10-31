@@ -48,3 +48,22 @@ def load_term_life_portfolio(path: str | Path) -> TermLifePolicies:
         raise ValueError("term_years must be positive")
 
     return TermLifePolicies(policy_id, age, sum_assured, premium, term)
+
+
+def write_term_life_portfolio_csv(policies: TermLifePolicies, path: str | Path) -> None:
+    """Write a term-life portfolio using the canonical input schema."""
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(REQUIRED_COLUMNS)
+        writer.writerows(
+            zip(
+                policies.policy_id,
+                policies.age_at_entry,
+                policies.sum_assured,
+                policies.annual_premium,
+                policies.term_years,
+                strict=True,
+            )
+        )
