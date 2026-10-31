@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from monte_carlo_accelerator.actuarial_engine import project_term_life
+from monte_carlo_accelerator.actuarial_multicore import project_term_life_multicore
 from monte_carlo_accelerator.environment import collect_environment
 from monte_carlo_accelerator.metrics import Measurement, measure, summarize
 from monte_carlo_accelerator.models import ActuarialAssumptions, ActuarialProjectionResult
@@ -44,6 +45,7 @@ SUMMARY_FIELDS = (
     "seed",
     "policy_chunk",
     "scenario_chunk",
+    "workers",
 )
 
 
@@ -101,6 +103,12 @@ def main() -> None:
     parser.add_argument("--portfolio-seed", type=int, default=17)
     parser.add_argument("--policy-chunk", type=int, default=2_048)
     parser.add_argument("--scenario-chunk", type=int, default=256)
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="CPU worker threads; benchmark several values because more can be slower",
+    )
     parser.add_argument("--warmups", type=int, default=1)
     parser.add_argument("--repetitions", type=int, default=5)
     parser.add_argument("--output", type=Path, default=Path("results/stage3_cpu_benchmarks.csv"))
@@ -114,8 +122,13 @@ def main() -> None:
 
     if args.warmups < 0 or args.repetitions < 1:
         parser.error("warmups must be >= 0 and repetitions must be >= 1")
-    if args.years <= 0 or args.policy_chunk <= 0 or args.scenario_chunk <= 0:
-        parser.error("years and chunk sizes must be positive")
+    if (
+        args.years <= 0
+        or args.policy_chunk <= 0
+        or args.scenario_chunk <= 0
+        or args.workers <= 0
+    ):
+        parser.error("years, chunk sizes, and workers must be positive")
     if args.portfolio_csv is not None and args.policies is not None:
         parser.error("--policies cannot be combined with --portfolio-csv")
 
@@ -145,13 +158,17 @@ def main() -> None:
     combinations = policy_count * scenario_count
     timestamp = datetime.now(timezone.utc).isoformat()
 
-    cold = measure(project_term_life, policies, scenario_count, assumptions)
+    def run_projection():
+        if args.workers == 1:
+            return project_term_life(policies, scenario_count, assumptions)
+        return project_term_life_multicore(
+            policies, scenario_count, assumptions, workers=args.workers
+        )
+
+    cold = measure(run_projection)
     for _ in range(args.warmups):
-        project_term_life(policies, scenario_count, assumptions)
-    measured = [
-        measure(project_term_life, policies, scenario_count, assumptions)
-        for _ in range(args.repetitions)
-    ]
+        run_projection()
+    measured = [measure(run_projection) for _ in range(args.repetitions)]
     reference = measured[0].value
     if any(not results_equal(reference, item.value) for item in measured[1:]):
         raise RuntimeError("deterministic repetitions produced different cash-flow results")
@@ -174,6 +191,7 @@ def main() -> None:
         "seed": assumptions.seed,
         "policy_chunk": assumptions.policy_chunk_size,
         "scenario_chunk": assumptions.scenario_chunk_size,
+        "workers": args.workers,
     }
     append_csv(args.output, summary_row)
 
@@ -193,10 +211,12 @@ def main() -> None:
         append_csv(args.runs_output, row, run_fields)
 
     document = {
-        "schema_version": 1,
+        "schema_version": 2,
         "timestamp_utc": timestamp,
         "methodology": {
-            "timed_scope": "project_term_life only; setup, summaries, metadata, and serialization excluded",
+            "timed_scope": "projection only; setup, summaries, metadata, and serialization excluded",
+            "execution_mode": "single-worker" if args.workers == 1 else "threaded-multicore",
+            "workers": args.workers,
             "cold_definition": "first projection in this process after portfolio setup",
             "warmup_runs_after_cold": args.warmups,
             "measured_warm_runs": args.repetitions,

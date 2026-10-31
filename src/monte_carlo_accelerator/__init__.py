@@ -11,6 +11,7 @@ from .actuarial_gpu_engine import (
     project_term_life_gpu,
     project_term_life_gpu_prepared,
 )
+from .actuarial_multicore import project_term_life_multicore
 from .engine import DEFAULT_GPU_THRESHOLD, project
 from .gpu_worker import WarmGPUWorker
 from .models import ActuarialAssumptions, ActuarialProjectionResult, TermLifePolicies
@@ -33,5 +34,6 @@ __all__ = [
     "prepare_gpu_term_life_policies",
     "project_term_life_gpu",
     "project_term_life_gpu_prepared",
+    "project_term_life_multicore",
     "write_term_life_portfolio_csv",
 ]

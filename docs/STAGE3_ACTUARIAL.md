@@ -140,6 +140,19 @@ The presets are `small` (100,000 combinations), `medium` (10 million), `large`
 (100 million), and `stress` (500 million). Custom policy and scenario counts can
 be supplied with `--policies` and `--scenarios`.
 
+Use `--workers` to measure the threaded multicore path against the single-worker
+baseline on the same machine:
+
+```bash
+python benchmarks/benchmark_stage3_cpu.py --preset medium --workers 2
+python benchmarks/benchmark_stage3_cpu.py --preset medium --workers 4
+```
+
+Worker count is deliberately configurable and defaults to one. This projection
+can become limited by memory bandwidth, so using every logical CPU may be slower.
+Benchmark the intended CPU instance and workload before selecting a production
+value. The output records both the execution mode and worker count.
+
 To benchmark projection using a portfolio loaded from CSV:
 
 ```bash
