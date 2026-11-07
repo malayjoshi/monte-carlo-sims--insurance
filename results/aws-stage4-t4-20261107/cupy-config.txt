@@ -1,0 +1,30 @@
+OS                           : Linux-6.8.0-1066-aws-x86_64-with-glibc2.35
+Python Version               : 3.10.12
+CuPy Version                 : 14.2.0
+CuPy Platform                : NVIDIA CUDA
+NumPy Version                : 2.2.6
+SciPy Version                : None
+Cython Build Version         : 3.2.4
+Cython Runtime Version       : None
+CUDA Root                    : /usr/local/cuda-13.0/targets/x86_64-linux
+NVCC PATH                    : /usr/local/cuda-13.0/bin/nvcc
+CUDA Build Version           : 12090
+CUDA Driver Version          : 13020
+CUDA Runtime Version         : 12090 (linked to CuPy) / 13000 (locally installed)
+CUDA Extra Include Dirs      : ['/usr/local/cuda-13.0/include']
+cuBLAS Version               : (available)
+cuFFT Version                : 11303
+cuRAND Version               : 10309
+cuSOLVER Version             : (11, 7, 3)
+cuSPARSE Version             : (available)
+NVRTC Version                : (13, 0)
+Thrust Version               : 300102
+CUB Build Version            : 300102
+Jitify Build Version         : <unknown>
+NCCL Build Version           : (not loaded; try `import cupy.cuda.nccl` first)
+NCCL Runtime Version         : (not loaded; try `import cupy.cuda.nccl` first)
+cuTENSOR Version             : None
+cuSPARSELt Build Version     : None
+Device 0 Name                : Tesla T4
+Device 0 Compute Capability  : 75
+Device 0 PCI Bus ID          : 0000:00:1E.0

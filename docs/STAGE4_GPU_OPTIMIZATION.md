@@ -72,7 +72,42 @@ parity. Compare warm median runtime, throughput, effective chunks, memory-pool
 use, and retry count. Do not claim a speed improvement until those matched T4
 runs complete.
 
+## Completed AWS validation
+
+On 2026-11-07, commit `e815f92863450698345c0bad0ea49195ab64a2af` completed
+validation on a `g4dn.xlarge` / Tesla T4 in `ap-south-1`. All runs used 30-year
+projections, one warmup, and five timed repetitions. CPU reference projections
+used identical inputs, assumptions, seed, and chunks.
+
+| Mode | Combinations | Warm compute median | Throughput (combinations/s) |
+|---|---:|---:|---:|
+| Fixed medium | 10,000,000 | 1.197322 s | 8,351,974 |
+| Adaptive medium | 10,000,000 | 1.183437 s | 8,449,966 |
+| Adaptive large | 100,000,000 | 10.366368 s | 9,646,580 |
+| Adaptive stress | 500,000,000 | 51.566261 s | 9,696,262 |
+
+Every run passed CPU/GPU parity at `rtol=1e-12, atol=1e-6`. Adaptive runs
+retained the requested `4096 x 128` chunks. The small medium timing difference
+does not establish a general speed improvement.
+
+Real CUDA checks also passed for default execution, a restricted memory budget,
+allocator OOM recovery, and the host-facing API. The restricted-budget case
+reduced `512 x 128` chunks to `512 x 11`; a 1 MiB allocator limit triggered
+three attempts and succeeded at `512 x 32`, preserving numerical parity.
+The test suite reported 72 passed and 2 skipped.
+
+The largest validated workload is 500 million policy-scenario combinations
+(15 billion policy-scenario-years). This is not a measured maximum capacity.
+The run exited with status 0 at 17:40:58 UTC (23:10:58 IST), and instance
+`i-01768984ed0af0a3d` subsequently terminated.
+
+Raw benchmark JSON, CSV, environment details, CUDA validation script and results,
+and test output are archived in
+[`results/aws-stage4-t4-20261107`](../results/aws-stage4-t4-20261107).
+The archive was recovered from the completed console response captured before
+termination; subsequent EC2 console requests returned an older snapshot.
+
 ## Completion boundary
 
-The code and CPU-backed tests establish Stage 4 memory behavior. Final Tesla T4
-performance and maximum safe workload remain AWS validation tasks.
+Stage 4 memory-aware execution and the planned Tesla T4 validation are complete.
+Further capacity-limit discovery or device-specific tuning is separate work.

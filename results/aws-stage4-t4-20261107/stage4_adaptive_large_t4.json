@@ -1,0 +1,188 @@
+{
+  "schema_version": 2,
+  "timestamp_utc": "2026-11-07T17:21:26.882527+00:00",
+  "methodology": {
+    "compute_only": "policies resident on GPU; three synchronized scenario arrays copied to host",
+    "end_to_end": "host policies transferred, projection executed, and three scenario arrays copied to host",
+    "cpu_reference": "untimed CPU projection with identical inputs, assumptions, seed, and chunks",
+    "warmups": 1,
+    "repetitions": 5,
+    "throughput_unit": "policy-scenario combinations per second"
+  },
+  "workload": {
+    "timestamp_utc": "2026-11-07T17:21:26.882527+00:00",
+    "preset": "large",
+    "policies": 100000,
+    "scenarios": 1000,
+    "years": 30,
+    "combinations": 100000000,
+    "policy_chunk": 4096,
+    "scenario_chunk": 128,
+    "effective_policy_chunk": 4096,
+    "effective_scenario_chunk": 128,
+    "repetitions": 5,
+    "cuda_startup_seconds": "0.192736",
+    "policy_prepare_seconds": "0.002276",
+    "compute_median_seconds": "10.366368",
+    "compute_median_throughput": "9646580.388",
+    "end_to_end_seconds": "10.387039",
+    "gpu_pool_used_bytes": 2801152,
+    "numerically_consistent": true,
+    "policy_scenario_years": 3000000000,
+    "assumptions": {
+      "projection_years": 30,
+      "discount_rate": 0.03,
+      "mortality_scale": 1.0,
+      "annual_lapse_rate": 0.05,
+      "expense_per_policy": 25.0,
+      "expense_inflation": 0.02,
+      "claim_inflation": 0.0,
+      "seed": 2026,
+      "policy_chunk_size": 4096,
+      "scenario_chunk_size": 128
+    }
+  },
+  "cuda_startup": {
+    "runtime_seconds": 0.1927360349999958
+  },
+  "policy_prepare": {
+    "runtime_seconds": 0.0022757930000238957
+  },
+  "cold_compute_run": {
+    "runtime_seconds": 10.485191711000027,
+    "throughput": 9537260.047910223
+  },
+  "warm_compute_runs": [
+    {
+      "runtime_seconds": 10.361212722000005,
+      "throughput": 9651379.880240234
+    },
+    {
+      "runtime_seconds": 10.366367766999986,
+      "throughput": 9646580.3883919
+    },
+    {
+      "runtime_seconds": 10.36555017400002,
+      "throughput": 9647341.271940459
+    },
+    {
+      "runtime_seconds": 10.370002986999964,
+      "throughput": 9643198.765261874
+    },
+    {
+      "runtime_seconds": 10.370976025000004,
+      "throughput": 9642294.00964216
+    }
+  ],
+  "warm_compute_summary": {
+    "count": 5,
+    "mean_seconds": 10.366821934999995,
+    "median_seconds": 10.366367766999986,
+    "stdev_seconds": 0.0038943057997296963,
+    "min_seconds": 10.361212722000005,
+    "max_seconds": 10.370976025000004,
+    "mean_throughput": 9646158.863095324,
+    "median_throughput": 9646580.3883919,
+    "min_throughput": 9642294.00964216,
+    "max_throughput": 9651379.880240234
+  },
+  "end_to_end_run": {
+    "runtime_seconds": 10.387038630999996
+  },
+  "cashflows": {
+    "mean_premium_pv": 1525026125.2130203,
+    "mean_claim_pv": 749659542.4033389,
+    "mean_expense_pv": 24610810.313893393,
+    "mean_net_cashflow_pv": 750755772.4957881,
+    "median_net_cashflow_pv": 751011832.4263055,
+    "p95_net_cashflow_pv": 778754291.740486
+  },
+  "parity": {
+    "rtol": 1e-12,
+    "atol": 1e-06,
+    "consistent": true,
+    "components": {
+      "premium_pv": {
+        "max_absolute_difference": 1.1920928955078125e-06,
+        "max_relative_difference": 7.826634758126576e-16,
+        "consistent": true
+      },
+      "claim_pv": {
+        "max_absolute_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "consistent": true
+      },
+      "expense_pv": {
+        "max_absolute_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "consistent": true
+      },
+      "net_cashflow_pv": {
+        "max_absolute_difference": 1.1920928955078125e-06,
+        "max_relative_difference": 1.6211371745001346e-15,
+        "consistent": true
+      }
+    }
+  },
+  "gpu_memory": {
+    "before_prepare": {
+      "device_free_bytes": 15527116800,
+      "device_total_bytes": 15637086208,
+      "pool_used_bytes": 0,
+      "pool_total_bytes": 0
+    },
+    "after_prepare": {
+      "device_free_bytes": 15522922496,
+      "device_total_bytes": 15637086208,
+      "pool_used_bytes": 2801152,
+      "pool_total_bytes": 2801152
+    },
+    "after_benchmark": {
+      "device_free_bytes": 15499853824,
+      "device_total_bytes": 15637086208,
+      "pool_used_bytes": 2801152,
+      "pool_total_bytes": 24886784
+    }
+  },
+  "adaptive_gpu": {
+    "requested_policy_chunk": 4096,
+    "requested_scenario_chunk": 128,
+    "effective_policy_chunk": 4096,
+    "effective_scenario_chunk": 128,
+    "free_device_bytes": 15522922496,
+    "memory_budget_bytes": 10866045747,
+    "estimated_bytes_per_cell": 256,
+    "attempts": 1
+  },
+  "gpu": {
+    "device_id": 0,
+    "name": "Tesla T4",
+    "compute_capability": "7.5",
+    "total_global_memory_bytes": 15637086208,
+    "multiprocessor_count": 40,
+    "cupy_version": "14.2.0",
+    "cuda_runtime_version": 12090,
+    "cuda_driver_version": 13020
+  },
+  "environment": {
+    "captured_at_utc": "2026-11-07T17:21:26.889715+00:00",
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz",
+    "physical_cpu_cores": 2,
+    "logical_cpu_count": 4,
+    "total_ram": "16166968 kB",
+    "linux_distribution": "Ubuntu 22.04.5 LTS",
+    "kernel": "6.8.0-1066-aws",
+    "platform": "Linux-6.8.0-1066-aws-x86_64-with-glibc2.35",
+    "python_version": "3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]",
+    "numpy_version": "2.2.6",
+    "blas_configuration": "{\n  \"Compilers\": {\n    \"c\": {\n      \"name\": \"gcc\",\n      \"linker\": \"ld.bfd\",\n      \"version\": \"10.2.1\",\n      \"commands\": \"cc\"\n    },\n    \"cython\": {\n      \"name\": \"cython\",\n      \"linker\": \"cython\",\n      \"version\": \"3.1.0\",\n      \"commands\": \"cython\"\n    },\n    \"c++\": {\n      \"name\": \"gcc\",\n      \"linker\": \"ld.bfd\",\n      \"version\": \"10.2.1\",\n      \"commands\": \"c++\"\n    }\n  },\n  \"Machine Information\": {\n    \"host\": {\n      \"cpu\": \"x86_64\",\n      \"family\": \"x86_64\",\n      \"endian\": \"little\",\n      \"system\": \"linux\"\n    },\n    \"build\": {\n      \"cpu\": \"x86_64\",\n      \"family\": \"x86_64\",\n      \"endian\": \"little\",\n      \"system\": \"linux\"\n    }\n  },\n  \"Build Dependencies\": {\n    \"blas\": {\n      \"name\": \"scipy-openblas\",\n      \"found\": true,\n      \"version\": \"0.3.29\",\n      \"detection method\": \"pkgconfig\",\n      \"include directory\": \"/opt/_internal/cpython-3.10.15/lib/python3.10/site-packages/scipy_openblas64/include\",\n      \"lib directory\": \"/opt/_internal/cpython-3.10.15/lib/python3.10/site-packages/scipy_openblas64/lib\",\n      \"openblas configuration\": \"OpenBLAS 0.3.29  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64\",\n      \"pc file directory\": \"/project/.openblas\"\n    },\n    \"lapack\": {\n      \"name\": \"scipy-openblas\",\n      \"found\": true,\n      \"version\": \"0.3.29\",\n      \"detection method\": \"pkgconfig\",\n      \"include directory\": \"/opt/_internal/cpython-3.10.15/lib/python3.10/site-packages/scipy_openblas64/include\",\n      \"lib directory\": \"/opt/_internal/cpython-3.10.15/lib/python3.10/site-packages/scipy_openblas64/lib\",\n      \"openblas configuration\": \"OpenBLAS 0.3.29  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64\",\n      \"pc file directory\": \"/project/.openblas\"\n    }\n  },\n  \"Python Information\": {\n    \"path\": \"/tmp/build-env-a8ncef9o/bin/python\",\n    \"version\": \"3.10\"\n  },\n  \"SIMD Extensions\": {\n    \"baseline\": [\n      \"SSE\",\n      \"SSE2\",\n      \"SSE3\"\n    ],\n    \"found\": [\n      \"SSSE3\",\n      \"SSE41\",\n      \"POPCNT\",\n      \"SSE42\",\n      \"AVX\",\n      \"F16C\",\n      \"FMA3\",\n      \"AVX2\",\n      \"AVX512F\",\n      \"AVX512CD\",\n      \"AVX512_SKX\",\n      \"AVX512_CLX\"\n    ],\n    \"not found\": [\n      \"AVX512_KNL\",\n      \"AVX512_KNM\",\n      \"AVX512_CNL\",\n      \"AVX512_ICL\"\n    ]\n  }\n}\n",
+    "threading_environment": {
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null,
+      "VECLIB_MAXIMUM_THREADS": null
+    },
+    "git_commit_sha": "e815f92863450698345c0bad0ea49195ab64a2af"
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "gpu": {
+    "device_id": 0,
+    "name": "Tesla T4",
+    "compute_capability": "7.5",
+    "total_global_memory_bytes": 15637086208,
+    "multiprocessor_count": 40,
+    "cupy_version": "14.2.0",
+    "cuda_runtime_version": 12090,
+    "cuda_driver_version": 13020
+  },
+  "cases": {
+    "default": {
+      "report": {
+        "requested_policy_chunk": 512,
+        "requested_scenario_chunk": 128,
+        "effective_policy_chunk": 512,
+        "effective_scenario_chunk": 128,
+        "free_device_bytes": 15525019648,
+        "memory_budget_bytes": 10867513753,
+        "estimated_bytes_per_cell": 256,
+        "attempts": 1
+      },
+      "parity": {
+        "rtol": 1e-12,
+        "atol": 1e-06,
+        "consistent": true,
+        "components": {
+          "premium_pv": {
+            "max_absolute_difference": 1.3969838619232178e-09,
+            "max_relative_difference": 5.831505672663066e-16,
+            "consistent": true
+          },
+          "claim_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "expense_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "net_cashflow_pv": {
+            "max_absolute_difference": 1.3969838619232178e-09,
+            "max_relative_difference": 4.262507964185654e-15,
+            "consistent": true
+          }
+        }
+      }
+    },
+    "restricted_budget": {
+      "report": {
+        "requested_policy_chunk": 512,
+        "requested_scenario_chunk": 128,
+        "effective_policy_chunk": 512,
+        "effective_scenario_chunk": 11,
+        "free_device_bytes": 15520825344,
+        "memory_budget_bytes": 1552082,
+        "estimated_bytes_per_cell": 256,
+        "attempts": 1
+      },
+      "parity": {
+        "rtol": 1e-12,
+        "atol": 1e-06,
+        "consistent": true,
+        "components": {
+          "premium_pv": {
+            "max_absolute_difference": 1.862645149230957e-09,
+            "max_relative_difference": 7.695634345918224e-16,
+            "consistent": true
+          },
+          "claim_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "expense_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "net_cashflow_pv": {
+            "max_absolute_difference": 1.862645149230957e-09,
+            "max_relative_difference": 4.262507964185654e-15,
+            "consistent": true
+          }
+        }
+      }
+    },
+    "allocator_oom_retry": {
+      "allocator_limit_bytes": 1048576,
+      "report": {
+        "requested_policy_chunk": 512,
+        "requested_scenario_chunk": 128,
+        "effective_policy_chunk": 512,
+        "effective_scenario_chunk": 32,
+        "free_device_bytes": 15522922496,
+        "memory_budget_bytes": 10866045747,
+        "estimated_bytes_per_cell": 256,
+        "attempts": 3
+      },
+      "parity": {
+        "rtol": 1e-12,
+        "atol": 1e-06,
+        "consistent": true,
+        "components": {
+          "premium_pv": {
+            "max_absolute_difference": 1.3969838619232178e-09,
+            "max_relative_difference": 5.831505672663066e-16,
+            "consistent": true
+          },
+          "claim_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "expense_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "net_cashflow_pv": {
+            "max_absolute_difference": 1.3969838619232178e-09,
+            "max_relative_difference": 4.262507964185654e-15,
+            "consistent": true
+          }
+        }
+      }
+    },
+    "host_api": {
+      "report": {
+        "requested_policy_chunk": 512,
+        "requested_scenario_chunk": 128,
+        "effective_policy_chunk": 512,
+        "effective_scenario_chunk": 128,
+        "free_device_bytes": 15522922496,
+        "memory_budget_bytes": 10866045747,
+        "estimated_bytes_per_cell": 256,
+        "attempts": 1
+      },
+      "parity": {
+        "rtol": 1e-12,
+        "atol": 1e-06,
+        "consistent": true,
+        "components": {
+          "premium_pv": {
+            "max_absolute_difference": 1.3969838619232178e-09,
+            "max_relative_difference": 5.831505672663066e-16,
+            "consistent": true
+          },
+          "claim_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "expense_pv": {
+            "max_absolute_difference": 0.0,
+            "max_relative_difference": 0.0,
+            "consistent": true
+          },
+          "net_cashflow_pv": {
+            "max_absolute_difference": 1.3969838619232178e-09,
+            "max_relative_difference": 4.262507964185654e-15,
+            "consistent": true
+          }
+        }
+      }
+    }
+  },
+  "passed": true
+}
