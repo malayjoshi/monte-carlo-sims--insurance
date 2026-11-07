@@ -104,6 +104,9 @@ The run exited with status 0 at 17:40:58 UTC (23:10:58 IST), and instance
 Raw benchmark JSON, CSV, environment details, CUDA validation script and results,
 and test output are archived in
 [`results/aws-stage4-t4-20261107`](../results/aws-stage4-t4-20261107).
+`environment.json` reproduces the environment embedded in
+`stage4_fixed_medium_t4.json`; the other three benchmark artifacts agree on
+hardware, operating system, Python version, and source commit.
 The archive was recovered from the completed console response captured before
 termination; subsequent EC2 console requests returned an older snapshot.
 
