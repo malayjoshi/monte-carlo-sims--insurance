@@ -14,6 +14,8 @@ from monte_carlo_accelerator.actuarial_engine import project_term_life
 from monte_carlo_accelerator.actuarial_gpu_engine import (
     prepare_gpu_term_life_policies,
     project_term_life_gpu,
+    project_term_life_gpu_adaptive,
+    project_term_life_gpu_adaptive_prepared,
     project_term_life_gpu_prepared,
 )
 from monte_carlo_accelerator.environment import collect_environment
@@ -115,6 +117,8 @@ def main() -> None:
     parser.add_argument("--portfolio-seed", type=int, default=17)
     parser.add_argument("--policy-chunk", type=int, default=4_096)
     parser.add_argument("--scenario-chunk", type=int, default=128)
+    parser.add_argument("--adaptive", action="store_true")
+    parser.add_argument("--gpu-memory-fraction", type=float, default=0.70)
     parser.add_argument("--warmups", type=int, default=1)
     parser.add_argument("--repetitions", type=int, default=5)
     parser.add_argument("--output", type=Path, default=Path("results/stage3_gpu_benchmarks.csv"))
@@ -127,6 +131,8 @@ def main() -> None:
         parser.error("warmups must be >= 0 and repetitions must be >= 1")
     if args.years <= 0 or args.policy_chunk <= 0 or args.scenario_chunk <= 0:
         parser.error("years and chunk sizes must be positive")
+    if not 0 < args.gpu_memory_fraction <= 1:
+        parser.error("gpu-memory-fraction must be between 0 and 1")
 
     policy_count, scenario_count = PRESETS[args.preset]
     policy_count = args.policies or policy_count
@@ -150,15 +156,49 @@ def main() -> None:
     prepared = policy_prepare.value
     memory_after_prepare = gpu_memory_snapshot(cupy)
 
-    cold = measure(project_term_life_gpu_prepared, prepared, scenario_count, assumptions, cupy)
+    adaptive_report = None
+    if args.adaptive:
+        adaptive_cold = measure(
+            project_term_life_gpu_adaptive_prepared,
+            prepared,
+            scenario_count,
+            assumptions,
+            cupy,
+            memory_fraction=args.gpu_memory_fraction,
+        )
+        cold_result, adaptive_report = adaptive_cold.value
+        cold = type(adaptive_cold)(
+            value=cold_result,
+            runtime_seconds=adaptive_cold.runtime_seconds,
+            peak_memory_mb=adaptive_cold.peak_memory_mb,
+        )
+        effective_assumptions = ActuarialAssumptions(
+            **{
+                **asdict(assumptions),
+                "policy_chunk_size": adaptive_report.effective_policy_chunk,
+                "scenario_chunk_size": adaptive_report.effective_scenario_chunk,
+            }
+        )
+    else:
+        cold = measure(project_term_life_gpu_prepared, prepared, scenario_count, assumptions, cupy)
+        effective_assumptions = assumptions
     for _ in range(args.warmups):
-        project_term_life_gpu_prepared(prepared, scenario_count, assumptions, cupy)
+        project_term_life_gpu_prepared(prepared, scenario_count, effective_assumptions, cupy)
     warm = [
-        measure(project_term_life_gpu_prepared, prepared, scenario_count, assumptions, cupy)
+        measure(project_term_life_gpu_prepared, prepared, scenario_count, effective_assumptions, cupy)
         for _ in range(args.repetitions)
     ]
     warm_summary = summarize(warm, combinations)
-    end_to_end = measure(project_term_life_gpu, policies, scenario_count, assumptions)
+    if args.adaptive:
+        end_to_end = measure(
+            project_term_life_gpu_adaptive,
+            policies,
+            scenario_count,
+            assumptions,
+            memory_fraction=args.gpu_memory_fraction,
+        )
+    else:
+        end_to_end = measure(project_term_life_gpu, policies, scenario_count, assumptions)
     memory_after_benchmark = gpu_memory_snapshot(cupy)
 
     cpu_result = project_term_life(policies, scenario_count, assumptions)
@@ -176,6 +216,8 @@ def main() -> None:
         "combinations": combinations,
         "policy_chunk": assumptions.policy_chunk_size,
         "scenario_chunk": assumptions.scenario_chunk_size,
+        "effective_policy_chunk": effective_assumptions.policy_chunk_size,
+        "effective_scenario_chunk": effective_assumptions.scenario_chunk_size,
         "repetitions": args.repetitions,
         "cuda_startup_seconds": f"{cuda_startup.runtime_seconds:.6f}",
         "policy_prepare_seconds": f"{policy_prepare.runtime_seconds:.6f}",
@@ -194,7 +236,7 @@ def main() -> None:
         writer.writerow(row)
 
     document = {
-        "schema_version": 1,
+        "schema_version": 2,
         "timestamp_utc": timestamp,
         "methodology": {
             "compute_only": "policies resident on GPU; three synchronized scenario arrays copied to host",
@@ -231,6 +273,7 @@ def main() -> None:
             "after_prepare": memory_after_prepare,
             "after_benchmark": memory_after_benchmark,
         },
+        "adaptive_gpu": asdict(adaptive_report) if adaptive_report is not None else None,
         "gpu": device_metadata(cupy),
         "environment": collect_environment(),
     }

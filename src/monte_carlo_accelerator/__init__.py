@@ -6,9 +6,13 @@ from .actuarial_dispatch import (
     project_term_life_auto,
 )
 from .actuarial_gpu_engine import (
+    AdaptiveGpuReport,
     GpuTermLifePolicies,
+    choose_adaptive_gpu_chunks,
     prepare_gpu_term_life_policies,
     project_term_life_gpu,
+    project_term_life_gpu_adaptive,
+    project_term_life_gpu_adaptive_prepared,
     project_term_life_gpu_prepared,
 )
 from .actuarial_multicore import project_term_life_multicore
@@ -21,18 +25,22 @@ from .portfolio_io import load_term_life_portfolio, write_term_life_portfolio_cs
 __all__ = [
     "ActuarialAssumptions",
     "ActuarialProjectionResult",
+    "AdaptiveGpuReport",
     "DEFAULT_GPU_THRESHOLD",
     "DEFAULT_STAGE3_GPU_THRESHOLD",
     "GpuTermLifePolicies",
     "TermLifePolicies",
     "WarmGPUWorker",
     "generate_term_life_portfolio",
+    "choose_adaptive_gpu_chunks",
     "load_term_life_portfolio",
     "project",
     "project_term_life",
     "project_term_life_auto",
     "prepare_gpu_term_life_policies",
     "project_term_life_gpu",
+    "project_term_life_gpu_adaptive",
+    "project_term_life_gpu_adaptive_prepared",
     "project_term_life_gpu_prepared",
     "project_term_life_multicore",
     "write_term_life_portfolio_csv",

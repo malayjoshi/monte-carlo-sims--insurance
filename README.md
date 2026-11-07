@@ -11,6 +11,14 @@ scenario-level premium, claim, expense, and net cash-flow present values. See
 CPU/GPU path remains unchanged so the published performance results stay
 reproducible.
 
+Stage 4 adds memory-aware GPU execution for the term-life workflow. It sizes
+chunks from current free device memory, preserves `float64`, and retries smaller
+blocks after a CUDA allocation failure. Run the benchmark with
+`python benchmarks/benchmark_stage3_gpu.py --preset medium --adaptive`; the JSON
+output records requested and effective chunks, memory budget, and retry count.
+See [`docs/STAGE4_GPU_OPTIMIZATION.md`](docs/STAGE4_GPU_OPTIMIZATION.md) for the
+application API, validation boundary, and matched AWS commands.
+
 ## Quick start
 
 ```fish

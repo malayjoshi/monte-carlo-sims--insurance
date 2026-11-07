@@ -1,6 +1,6 @@
 """Optional CuPy implementation of the Stage 3 term-life projection."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import numpy as np
@@ -20,6 +20,75 @@ class GpuTermLifePolicies:
 
     def __len__(self) -> int:
         return len(self.policy_id)
+
+
+@dataclass(frozen=True)
+class AdaptiveGpuReport:
+    """Memory decision and retry history for one adaptive GPU projection."""
+
+    requested_policy_chunk: int
+    requested_scenario_chunk: int
+    effective_policy_chunk: int
+    effective_scenario_chunk: int
+    free_device_bytes: int
+    memory_budget_bytes: int
+    estimated_bytes_per_cell: int
+    attempts: int
+
+
+def choose_adaptive_gpu_chunks(
+    policies: GpuTermLifePolicies,
+    scenarios: int,
+    assumptions: ActuarialAssumptions,
+    cupy,
+    *,
+    memory_fraction: float = 0.70,
+    estimated_bytes_per_cell: int = 256,
+) -> tuple[ActuarialAssumptions, int, int]:
+    """Fit requested chunks into a conservative share of free device memory."""
+    if scenarios <= 0:
+        raise ValueError("scenarios must be positive")
+    if not 0 < memory_fraction <= 1:
+        raise ValueError("memory_fraction must be between 0 and 1")
+    if estimated_bytes_per_cell <= 0:
+        raise ValueError("estimated_bytes_per_cell must be positive")
+
+    free_bytes, _ = cupy.cuda.runtime.memGetInfo()
+    budget = int(free_bytes * memory_fraction)
+    output_bytes = scenarios * 3 * np.dtype(np.float64).itemsize
+    cell_budget = max(1, (budget - output_bytes) // estimated_bytes_per_cell)
+
+    policy_chunk = min(assumptions.policy_chunk_size, len(policies))
+    scenario_chunk = min(assumptions.scenario_chunk_size, scenarios)
+    if policy_chunk * scenario_chunk > cell_budget:
+        scenario_chunk = max(1, min(scenario_chunk, cell_budget // max(policy_chunk, 1)))
+    if policy_chunk * scenario_chunk > cell_budget:
+        policy_chunk = max(1, min(policy_chunk, cell_budget // scenario_chunk))
+
+    return (
+        replace(
+            assumptions,
+            policy_chunk_size=policy_chunk,
+            scenario_chunk_size=scenario_chunk,
+        ),
+        int(free_bytes),
+        budget,
+    )
+
+
+def _is_gpu_out_of_memory(error: BaseException, cupy) -> bool:
+    if isinstance(error, MemoryError):
+        return True
+    memory_module = getattr(getattr(cupy, "cuda", None), "memory", None)
+    oom_type = getattr(memory_module, "OutOfMemoryError", None)
+    return oom_type is not None and isinstance(error, oom_type)
+
+
+def _release_unused_gpu_memory(cupy) -> None:
+    pool = getattr(cupy, "get_default_memory_pool", lambda: None)()
+    release = getattr(pool, "free_all_blocks", None)
+    if release is not None:
+        release()
 
 
 def prepare_gpu_term_life_policies(
@@ -127,6 +196,64 @@ def project_term_life_gpu_prepared(
     )
 
 
+def project_term_life_gpu_adaptive_prepared(
+    policies: GpuTermLifePolicies,
+    scenarios: int,
+    assumptions: ActuarialAssumptions = ActuarialAssumptions(),
+    cupy=None,
+    *,
+    memory_fraction: float = 0.70,
+    estimated_bytes_per_cell: int = 256,
+    max_retries: int = 8,
+) -> tuple[ActuarialProjectionResult, AdaptiveGpuReport]:
+    """Project with memory-aware chunks and retry smaller blocks after GPU OOM."""
+    if max_retries < 0:
+        raise ValueError("max_retries must be non-negative")
+    xp = cupy or _load_cupy()
+    effective, free_bytes, budget = choose_adaptive_gpu_chunks(
+        policies,
+        scenarios,
+        assumptions,
+        xp,
+        memory_fraction=memory_fraction,
+        estimated_bytes_per_cell=estimated_bytes_per_cell,
+    )
+
+    attempts = 0
+    while True:
+        attempts += 1
+        try:
+            result = project_term_life_gpu_prepared(
+                policies, scenarios, effective, xp
+            )
+            return result, AdaptiveGpuReport(
+                requested_policy_chunk=assumptions.policy_chunk_size,
+                requested_scenario_chunk=assumptions.scenario_chunk_size,
+                effective_policy_chunk=effective.policy_chunk_size,
+                effective_scenario_chunk=effective.scenario_chunk_size,
+                free_device_bytes=free_bytes,
+                memory_budget_bytes=budget,
+                estimated_bytes_per_cell=estimated_bytes_per_cell,
+                attempts=attempts,
+            )
+        except Exception as error:
+            if not _is_gpu_out_of_memory(error, xp) or attempts > max_retries:
+                raise
+            if effective.scenario_chunk_size > 1:
+                effective = replace(
+                    effective,
+                    scenario_chunk_size=max(1, effective.scenario_chunk_size // 2),
+                )
+            elif effective.policy_chunk_size > 1:
+                effective = replace(
+                    effective,
+                    policy_chunk_size=max(1, effective.policy_chunk_size // 2),
+                )
+            else:
+                raise
+            _release_unused_gpu_memory(xp)
+
+
 def project_term_life_gpu(
     policies: TermLifePolicies,
     scenarios: int,
@@ -136,3 +263,26 @@ def project_term_life_gpu(
     cupy = _load_cupy()
     prepared = prepare_gpu_term_life_policies(policies, cupy)
     return project_term_life_gpu_prepared(prepared, scenarios, assumptions, cupy)
+
+
+def project_term_life_gpu_adaptive(
+    policies: TermLifePolicies,
+    scenarios: int,
+    assumptions: ActuarialAssumptions = ActuarialAssumptions(),
+    *,
+    memory_fraction: float = 0.70,
+    estimated_bytes_per_cell: int = 256,
+    max_retries: int = 8,
+) -> tuple[ActuarialProjectionResult, AdaptiveGpuReport]:
+    """Transfer policies, then run the memory-aware Stage 4 GPU projection."""
+    cupy = _load_cupy()
+    prepared = prepare_gpu_term_life_policies(policies, cupy)
+    return project_term_life_gpu_adaptive_prepared(
+        prepared,
+        scenarios,
+        assumptions,
+        cupy,
+        memory_fraction=memory_fraction,
+        estimated_bytes_per_cell=estimated_bytes_per_cell,
+        max_retries=max_retries,
+    )
