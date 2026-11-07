@@ -4,6 +4,8 @@
 import argparse
 import csv
 import json
+import os
+import tempfile
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +32,40 @@ PRESETS = {
     "large": (100_000, 1_000),
     "stress": (250_000, 2_000),
 }
+
+
+def append_benchmark_csv(path: Path, row: dict) -> None:
+    """Append a result, expanding older headers without losing existing data."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = []
+    if path.exists():
+        with path.open(newline="", encoding="utf-8") as handle:
+            fieldnames = csv.DictReader(handle).fieldnames or []
+    missing = [name for name in row if name not in fieldnames]
+    if fieldnames and missing:
+        temporary_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", newline="", encoding="utf-8", dir=path.parent, delete=False
+            ) as destination:
+                temporary_path = Path(destination.name)
+                writer = csv.DictWriter(
+                    destination, fieldnames=fieldnames + missing, lineterminator="\n"
+                )
+                writer.writeheader()
+                with path.open(newline="", encoding="utf-8") as source:
+                    writer.writerows(csv.DictReader(source))
+                writer.writerow(row)
+            os.replace(temporary_path, path)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+        return
+    with path.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames or row, lineterminator="\n")
+        if not fieldnames:
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def device_metadata(cupy) -> dict:
@@ -227,13 +263,7 @@ def main() -> None:
         "gpu_pool_used_bytes": memory_after_benchmark["pool_used_bytes"],
         "numerically_consistent": parity["consistent"],
     }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    exists = args.output.exists()
-    with args.output.open("a", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=row, lineterminator="\n")
-        if not exists:
-            writer.writeheader()
-        writer.writerow(row)
+    append_benchmark_csv(args.output, row)
 
     document = {
         "schema_version": 2,
