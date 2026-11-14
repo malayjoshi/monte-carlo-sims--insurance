@@ -192,22 +192,25 @@ def main() -> None:
     prepared = policy_prepare.value
     memory_after_prepare = gpu_memory_snapshot(cupy)
 
-    adaptive_report = None
-    if args.adaptive:
-        adaptive_cold = measure(
-            project_term_life_gpu_adaptive_prepared,
-            prepared,
-            scenario_count,
-            assumptions,
-            cupy,
-            memory_fraction=args.gpu_memory_fraction,
-        )
-        cold_result, adaptive_report = adaptive_cold.value
-        cold = type(adaptive_cold)(
-            value=cold_result,
-            runtime_seconds=adaptive_cold.runtime_seconds,
-            peak_memory_mb=adaptive_cold.peak_memory_mb,
-        )
+    def run_prepared():
+        if args.adaptive:
+            return project_term_life_gpu_adaptive_prepared(
+                prepared, scenario_count, assumptions, cupy,
+                memory_fraction=args.gpu_memory_fraction,
+            )
+        return project_term_life_gpu_prepared(prepared, scenario_count, assumptions, cupy)
+
+    def run_end_to_end():
+        if args.adaptive:
+            return project_term_life_gpu_adaptive(
+                policies, scenario_count, assumptions,
+                memory_fraction=args.gpu_memory_fraction,
+            )
+        return project_term_life_gpu(policies, scenario_count, assumptions)
+
+    cold = measure(run_prepared)
+    adaptive_report = cold.value[1] if args.adaptive else None
+    if adaptive_report is not None:
         effective_assumptions = ActuarialAssumptions(
             **{
                 **asdict(assumptions),
@@ -216,31 +219,36 @@ def main() -> None:
             }
         )
     else:
-        cold = measure(project_term_life_gpu_prepared, prepared, scenario_count, assumptions, cupy)
         effective_assumptions = assumptions
+    warmup_reports = []
     for _ in range(args.warmups):
-        project_term_life_gpu_prepared(prepared, scenario_count, effective_assumptions, cupy)
-    warm = [
-        measure(project_term_life_gpu_prepared, prepared, scenario_count, effective_assumptions, cupy)
-        for _ in range(args.repetitions)
-    ]
+        value = run_prepared()
+        if args.adaptive:
+            warmup_reports.append(asdict(value[1]))
+    warm = [measure(run_prepared) for _ in range(args.repetitions)]
     warm_summary = summarize(warm, combinations)
-    if args.adaptive:
-        end_to_end = measure(
-            project_term_life_gpu_adaptive,
-            policies,
-            scenario_count,
-            assumptions,
-            memory_fraction=args.gpu_memory_fraction,
-        )
-    else:
-        end_to_end = measure(project_term_life_gpu, policies, scenario_count, assumptions)
+    end_to_end_runs = [measure(run_end_to_end) for _ in range(args.repetitions)]
+    end_to_end = end_to_end_runs[0]
+    end_to_end_summary = summarize(end_to_end_runs, combinations)
     memory_after_benchmark = gpu_memory_snapshot(cupy)
 
     cpu_result = project_term_life(policies, scenario_count, assumptions)
-    parity = component_parity(cpu_result, warm[0].value)
-    if not parity["consistent"]:
-        raise RuntimeError("Stage 3 GPU result exceeds CPU/GPU numerical acceptance criteria")
+    def run_document(item):
+        result, report = item.value if args.adaptive else (item.value, None)
+        parity = component_parity(cpu_result, result)
+        if not parity["consistent"]:
+            raise RuntimeError("Stage 3 GPU result exceeds CPU/GPU numerical acceptance criteria")
+        return {
+            "runtime_seconds": item.runtime_seconds,
+            "throughput": combinations / item.runtime_seconds,
+            "adaptive_gpu": asdict(report) if report is not None else None,
+            "parity": parity,
+        }
+
+    cold_document = run_document(cold)
+    warm_documents = [run_document(item) for item in warm]
+    end_to_end_documents = [run_document(item) for item in end_to_end_runs]
+    parity = warm_documents[0]["parity"]
 
     timestamp = datetime.now(timezone.utc).isoformat()
     row = {
@@ -260,17 +268,23 @@ def main() -> None:
         "compute_median_seconds": f"{warm_summary.median_seconds:.6f}",
         "compute_median_throughput": f"{warm_summary.median_throughput:.3f}",
         "end_to_end_seconds": f"{end_to_end.runtime_seconds:.6f}",
+        "end_to_end_median_seconds": f"{end_to_end_summary.median_seconds:.6f}",
+        "end_to_end_median_throughput": f"{end_to_end_summary.median_throughput:.3f}",
         "gpu_pool_used_bytes": memory_after_benchmark["pool_used_bytes"],
         "numerically_consistent": parity["consistent"],
     }
     append_benchmark_csv(args.output, row)
 
     document = {
-        "schema_version": 2,
+        "schema_version": 3,
         "timestamp_utc": timestamp,
         "methodology": {
             "compute_only": "policies resident on GPU; three synchronized scenario arrays copied to host",
-            "end_to_end": "host policies transferred, projection executed, and three scenario arrays copied to host",
+            "end_to_end": "initialized CUDA context; host policies transferred, projection executed, and three scenario arrays copied to host; process startup excluded",
+            "cuda_context": "initialized before all projection timings, including cold compute",
+            "adaptive_timing": "full adaptive API, including chunk selection and retries, on every call" if args.adaptive else None,
+            "effective_chunks": "workload effective chunks and top-level adaptive_gpu describe cold compute; per-run reports are authoritative",
+            "parity_scope": "every measured cold, warm, and end-to-end run; top-level parity retains first warm run compatibility",
             "cpu_reference": "untimed CPU projection with identical inputs, assumptions, seed, and chunks",
             "warmups": args.warmups,
             "repetitions": args.repetitions,
@@ -278,25 +292,20 @@ def main() -> None:
         },
         "workload": {
             **row,
+            "portfolio_seed": args.portfolio_seed,
             "policy_scenario_years": combinations * assumptions.projection_years,
             "assumptions": asdict(assumptions),
         },
         "cuda_startup": {"runtime_seconds": cuda_startup.runtime_seconds},
         "policy_prepare": {"runtime_seconds": policy_prepare.runtime_seconds},
-        "cold_compute_run": {
-            "runtime_seconds": cold.runtime_seconds,
-            "throughput": combinations / cold.runtime_seconds,
-        },
-        "warm_compute_runs": [
-            {
-                "runtime_seconds": item.runtime_seconds,
-                "throughput": combinations / item.runtime_seconds,
-            }
-            for item in warm
-        ],
+        "cold_compute_run": cold_document,
+        "warmup_adaptive_reports": warmup_reports,
+        "warm_compute_runs": warm_documents,
         "warm_compute_summary": asdict(warm_summary),
-        "end_to_end_run": {"runtime_seconds": end_to_end.runtime_seconds},
-        "cashflows": cashflow_summary(warm[0].value),
+        "end_to_end_run": end_to_end_documents[0],
+        "end_to_end_runs": end_to_end_documents,
+        "end_to_end_summary": asdict(end_to_end_summary),
+        "cashflows": cashflow_summary(warm[0].value[0] if args.adaptive else warm[0].value),
         "parity": parity,
         "gpu_memory": {
             "before_prepare": memory_before_prepare,
