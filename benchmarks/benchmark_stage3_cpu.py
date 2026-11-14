@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
+from benchmarks.benchmark_stage3_gpu import component_parity
 from monte_carlo_accelerator.actuarial_engine import project_term_life
 from monte_carlo_accelerator.actuarial_multicore import project_term_life_multicore
 from monte_carlo_accelerator.environment import collect_environment
@@ -173,6 +174,31 @@ def main() -> None:
     if any(not results_equal(reference, item.value) for item in measured[1:]):
         raise RuntimeError("deterministic repetitions produced different cash-flow results")
 
+    single_cpu = (
+        project_term_life(policies, scenario_count, assumptions)
+        if args.workers > 1 else reference
+    )
+    parity_runs = [component_parity(single_cpu, item.value) for item in [cold, *measured]]
+    parity = {
+        "rtol": parity_runs[0]["rtol"],
+        "atol": parity_runs[0]["atol"],
+        "consistent": all(item["consistent"] for item in parity_runs),
+        "components": {
+            name: {
+                "consistent": all(item["components"][name]["consistent"] for item in parity_runs),
+                **{
+                    metric: max(item["components"][name][metric] for item in parity_runs)
+                    for metric in ("max_absolute_difference", "max_relative_difference")
+                },
+            }
+            for name in parity_runs[0]["components"]
+        },
+        "cold_run": parity_runs[0],
+        "warm_runs": parity_runs[1:],
+    }
+    if not parity["consistent"]:
+        raise RuntimeError("Stage 3 CPU result exceeds single-CPU numerical acceptance criteria")
+
     summary = summarize(measured, combinations)
     cashflows = cashflow_summary(reference)
     peak_memory = max(item.peak_memory_mb for item in measured)
@@ -211,11 +237,12 @@ def main() -> None:
         append_csv(args.runs_output, row, run_fields)
 
     document = {
-        "schema_version": 2,
+        "schema_version": 3,
         "timestamp_utc": timestamp,
         "methodology": {
             "timed_scope": "projection only; setup, summaries, metadata, and serialization excluded",
             "execution_mode": "single-worker" if args.workers == 1 else "threaded-multicore",
+            "cpu_reference": "untimed single-worker projection for multicore; first warm result for single-worker self-reference; every measured cold and warm run checked component-wise with rtol=1e-12, atol=1e-6",
             "workers": args.workers,
             "cold_definition": "first projection in this process after portfolio setup",
             "warmup_runs_after_cold": args.warmups,
@@ -242,6 +269,7 @@ def main() -> None:
         "warm_runs": [_measurement_document(item, combinations) for item in measured],
         "summary": asdict(summary),
         "cashflows": cashflows,
+        "parity": parity,
         "environment": collect_environment(),
     }
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
